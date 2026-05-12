@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FFFFFF">
+<title>Bogor Smart Traffic - Final Pro</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+body { background-color: #F0F4F8; display: flex; justify-content: center; height: 100vh; height: 100dvh; overflow: hidden; color: #1E293B; }
+
+.app-container { width: 100%; max-width: 480px; background: #FFFFFF; position: relative; height: 100%; overflow-y: auto; overflow-x: hidden; box-shadow: 0 10px 50px rgba(0,0,0,0.1); scroll-behavior: smooth; user-select: none; }
+.app-container::-webkit-scrollbar { display: none; }
+.app-container { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* MODAL POPUP */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(5px); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+.modal-box { background: white; border-radius: 28px; padding: 30px 25px; width: 85%; max-width: 320px; text-align: center; transform: translateY(20px); transition: 0.3s; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+.modal-box.show { transform: translateY(0); }
+.modal-icon { width: 65px; height: 65px; background: #FFFBEB; color: #F59E0B; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 4px solid #FEF3C7;}
+.modal-title { font-size: 18px; font-weight: 800; color: #1E293B; margin-bottom: 10px; }
+.modal-text { font-size: 14px; color: #64748B; margin-bottom: 25px; line-height: 1.6; font-weight: 500;}
+.btn-modal-ok { background: #00AED6; color: white; border: none; padding: 14px 25px; border-radius: 16px; font-weight: 700; font-size: 14px; width: 100%; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 15px rgba(0,174,214,0.25);}
+.btn-modal-ok:active { transform: scale(0.95); box-shadow: 0 4px 10px rgba(0,174,214,0.2); }
+
+/* LOGIN SCREEN */
+#login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; background: #FFFFFF; height: 100%; z-index: 999; }
+.login-logo { width: 90px; height: 90px; background: #00AED6; border-radius: 28px; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,174,214,0.3); }
+.login-title { font-size: 28px; font-weight: 800; color: #1c1c1c; margin-bottom: 8px; letter-spacing: -0.03em;}
+.login-title span { color: #00AED6; }
+.login-subtitle { font-size: 15px; color: #64748B; margin-bottom: 45px; text-align: center; max-width: 280px; line-height: 1.5;}
+
+.input-group { width: 100%; margin-bottom: 20px; position: relative; }
+.input-group label { display: block; font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px; margin-left: 4px; }
+.input-group input { width: 100%; padding: 18px 18px 18px 50px; border-radius: 18px; border: 2px solid #E2E8F0; background: #F8FAFC; font-size: 15px; font-weight: 600; color: #1E293B; outline: none; transition: 0.25s; }
+.input-group input:focus { border-color: #00AED6; background: white; box-shadow: 0 0 0 4px rgba(0,174,214,0.1); }
+.input-icon { position: absolute; left: 18px; top: 43px; color: #94A3B8; transition: 0.2s;}
+.input-group input:focus + .input-icon { color: #00AED6; }
+.input-icon svg { width: 22px; height: 22px; }
+
+.btn-login { width: 100%; padding: 18px; border-radius: 18px; background: #00AED6; color: white; font-size: 16px; font-weight: 700; border: none; cursor: pointer; margin-top: 15px; transition: 0.2s; box-shadow: 0 10px 25px rgba(0,174,214,0.3); }
+.btn-login:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,174,214,0.2); }
+#login-error { color: #EF4444; font-size: 13px; font-weight: 600; text-align: center; margin-top: 18px; background: #FEE2E2; padding: 10px; border-radius: 10px; width: 100%; display: none; }
+
+/* MAIN APP */
+#main-app { display: none; animation: fadeIn 0.4s ease; padding-bottom: 120px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.app-header { background: #00AED6; padding: max(25px, env(safe-area-inset-top)) 20px 70px 20px; color: white; border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; position: relative; box-shadow: 0 10px 30px rgba(0,174,214,0.2); }
+.header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.header-title { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 9px; letter-spacing: -0.02em; }
+.status-badge { background: rgba(255,255,255,0.25); padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 7px; backdrop-filter: blur(5px); }
+.status-dot { width: 9px; height: 9px; border-radius: 50%; background: #CBD5E1; transition: 0.3s; }
+.status-dot.on { background: #10B981; box-shadow: 0 0 10px #10B981; animation: pulseGlow 1.5s infinite;}
+@keyframes pulseGlow { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* VIEWS TABS */
+.view-section { display: none; animation: fadeIn 0.3s ease; }
+.view-section.active { display: block; }
+
+/* DASHBOARD VIEW */
+.balance-card { background: white; border-radius: 26px; padding: 20px; margin: -50px 20px 25px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.07); display: flex; justify-content: space-around; position: relative; z-index: 10; border: 1px solid #F1F5F9;}
+.stat-item { text-align: center; flex: 1; display: flex; flex-direction: column; align-items: center;}
+.stat-item:not(:last-child) { border-right: 1px solid #F1F5F9; }
+.stat-val { font-size: 26px; font-weight: 800; display: block; margin-bottom: 3px; letter-spacing: -0.03em; transition: 0.3s;}
+.stat-label { font-size: 12px; color: #64748B; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;}
+
+.status-pill { font-size: 9px; font-weight: 800; padding: 3px 8px; border-radius: 10px; margin-top: 5px; text-transform: uppercase; letter-spacing: 0.05em; background: #F1F5F9; color: #94A3B8; transition: 0.3s;}
+.pill-sepi { background: #D1FAE5; color: #059669; }
+.pill-sedang { background: #FEF3C7; color: #D97706; }
+.pill-ramai { background: #FEE2E2; color: #DC2626; }
+
+.action-grid { display: flex; justify-content: space-around; margin: 0 15px 25px 15px; background: #F8FAFC; padding: 15px; border-radius: 20px; border: 1px solid #F1F5F9;}
+.action-btn { display: flex; flex-direction: column; align-items: center; gap: 10px; border: none; background: none; cursor: pointer; transition: 0.2s transform; flex: 1;}
+.action-icon { width: 55px; height: 55px; border-radius: 20px; background: white; color: #00AED6; display: flex; justify-content: center; align-items: center; box-shadow: 0 5px 15px rgba(0,0,0,0.04); transition: 0.2s; border: 1px solid #F1F5F9; }
+.action-icon svg { width: 26px; height: 26px; stroke-width: 2.2; }
+.action-btn:active { transform: scale(0.92); }
+.action-btn span { font-size: 12px; font-weight: 700; color: #1E293B; }
+
+.section { margin: 0 20px 20px 20px; }
+.card { background: white; border-radius: 26px; padding: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.04); margin-bottom: 16px; border: 1px solid #F1F5F9; }
+.card-title { font-size: 16px; font-weight: 800; margin-bottom: 16px; color: #1E293B; display: flex; justify-content: space-between; align-items: center; letter-spacing: -0.01em;}
+
+.custom-select-wrap { position: relative; margin-bottom: 18px; }
+.custom-select-wrap select { width: 100%; padding: 16px 18px; border-radius: 16px; border: 2px solid #E2E8F0; background: #F8FAFC; font-size: 14px; font-weight: 700; color: #1E293B; outline: none; appearance: none; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
+.custom-select-wrap select:focus { border-color: #00AED6; background: white; }
+.select-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); color: #64748B; pointer-events: none; }
+
+.cam-wrap { position: relative; width: 100%; border-radius: 18px; overflow: hidden; background: #0F172A; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 30px rgba(0,0,0,0.5); }
+#video { width: 100%; height: 100%; object-fit: cover; display: none; }
+#canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.cam-placeholder { color: white; text-align: center; font-size: 14px; font-weight: 600; opacity: 0.9; display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(0,174,214,0.1); padding: 20px; border-radius: 15px;}
+.cam-placeholder svg { width: 40px; height: 40px; color: #00AED6; opacity: 1; }
+
+#iframe-container { width: 100%; height: 100%; position: absolute; inset: 0; display: none; z-index: 5; background: #000; }
+#iframe-container iframe { width: 100%; height: 100%; border: none; }
+
+.map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.map-title { font-size: 16px; font-weight: 800; color: #1E293B; }
+.btn-rute { background: #ECFDF5; color: #10B981; border: none; padding: 8px 16px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; border: 1px solid #A7F3D0;}
+.btn-rute:active { transform: scale(0.95); background: #A7F3D0; }
+#map { width: 100%; height: 200px; border-radius: 18px; z-index: 1; border: 2px solid #E2E8F0; }
+.leaflet-routing-container { display: none !important; }
+
+/* AESTHETIC LOG LIST */
+.log-header-vibrant { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #F1F5F9; }
+.log-list { display: flex; flex-direction: column; gap: 12px; max-height: 300px; overflow-y: auto; padding-right: 5px; }
+.log-item { display: flex; align-items: center; gap: 16px; padding: 16px; background: #FFFFFF; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); border: 1px solid #F8FAFC; transition: transform 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+.log-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--item-color, #CBD5E1); }
+.log-item:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
+.log-thumb { width: 48px; height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: var(--item-bg, #F1F5F9); color: var(--item-color, #475569); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.log-info { flex: 1; }
+.log-name { font-size: 15px; font-weight: 800; color: #1E293B; letter-spacing: -0.01em; margin-bottom: 4px; }
+.log-sub { font-size: 12px; color: #64748B; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.log-time { font-size: 11px; background: #F1F5F9; padding: 3px 8px; border-radius: 8px; color: #475569; font-weight: 700; }
+
+/* REPORT VIEW (LAPORAN 30 DETIK) */
+.report-title-card { background: linear-gradient(135deg, #00AED6 0%, #3B82F6 100%); padding: 30px 20px; border-radius: 26px; color: white; margin: 20px 20px -30px 20px; position: relative; z-index: 1; box-shadow: 0 10px 30px rgba(59,130,246,0.3); }
+.report-title { font-size: 22px; font-weight: 800; margin-bottom: 5px; }
+.report-desc { font-size: 14px; font-weight: 500; opacity: 0.9; }
+.report-chart-card { background: white; border-radius: 26px; padding: 35px 20px 20px; margin: 0 20px 20px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.07); position: relative; z-index: 10; border: 1px solid #F1F5F9; }
+.chart-30s-wrapper { width: 100%; height: 250px; margin-top: 10px; }
+.report-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+.r-stat { background: #F8FAFC; padding: 15px; border-radius: 18px; text-align: center; border: 1px solid #E2E8F0; }
+.r-stat-val { font-size: 24px; font-weight: 800; margin-bottom: 2px; }
+.r-stat-lbl { font-size: 11px; color: #64748B; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* BOTTOM NAVIGATION */
+.bottom-nav-wrap { position: fixed; bottom: 0; width: 100%; max-width: 480px; padding: 0 12px max(12px, env(safe-area-inset-bottom)) 12px; pointer-events: none; z-index: 9999; }
+.bottom-nav { background: rgba(255, 255, 255, 0.95); border-radius: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.08); display: flex; justify-content: space-around; padding: 10px; pointer-events: auto; border: 1px solid rgba(241, 245, 249, 0.8); backdrop-filter: blur(10px); }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: #94A3B8; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.3s; flex: 1; height: 55px; position: relative; border-radius: 16px; }
+.nav-item:active { background: #F1F5F9; }
+.nav-item.active { color: #00AED6; }
+.nav-item.active::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 4px; background: #00AED6; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
+.nav-item svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2.2; transition: 0.3s; }
+.nav-item.active svg { stroke-width: 2.5; transform: translateY(2px); }
+.nav-item.nav-logout.active { color: #EF4444; }
+.nav-item.nav-logout.active::before { background: #EF4444; }
+.loading-svg { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="custom-modal">
+  <div class="modal-box" id="modal-box">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <h3 class="modal-title">Pemberitahuan</h3>
+    <p class="modal-text">Ini adalah video, bukan cctv realtime, hanya untuk gambaran.</p>
+    <button class="btn-modal-ok" onclick="closeModalAndPlay()">OK, Tampilkan Video</button>
+  </div>
+</div>
+
+<div class="app-container" id="login-screen">
+  <div class="login-logo"><svg viewBox="0 0 24 24" width="45" height="45" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+  <h1 class="login-title">Smart <span>Bogor</span></h1>
+  <p class="login-subtitle">Command Center & Traffic AI Detector</p>
+
+  <div class="input-group">
+    <label>Username</label>
+    <input type="text" id="username" placeholder="Masukkan username" value="admin">
+    <div class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+  </div>
+
+  <div class="input-group">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="Masukkan password" value="admin123">
+    <div class="input-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+  </div>
+
+  <div id="login-error">Username atau Password salah!</div>
+  <button class="btn-login" onclick="prosesLogin()">Masuk Sistem</button>
+</div>
+
+<div class="app-container" id="main-app">
+  
+  <div class="app-header">
+    <div class="header-top">
+      <div class="header-title">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Command Center
+      </div>
+      <div class="status-badge">
+        <div class="status-dot" id="srv-dot"></div>
+        <span id="srv-txt">Offline</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="views-container">
+    
+    <div id="view-home" class="view-section active">
+      <div class="balance-card">
+        <div class="stat-item"><span class="stat-val" style="color: #00AED6" id="s-car">0</span><span class="stat-label">Mobil</span></div>
+        <div class="stat-item"><span class="stat-val" style="color: #10B981" id="s-motor">0</span><span class="stat-label">Motor</span></div>
+        <div class="stat-item"><span class="stat-val" style="color: #F59E0B" id="s-person">0</span><span class="stat-label">Orang</span><div id="s-status" class="status-pill">KOSONG</div></div>
+      </div>
+
+      <div class="action-grid">
+        <button class="action-btn" onclick="handleMain()">
+          <div class="action-icon" id="btn-icon" style="background:#E0F2FE; color:#00AED6; border-color:#BAE6FD;"><svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg></div>
+          <span id="btn-txt">Mulai</span>
+        </button>
+        <button class="action-btn" onclick="findMyLocation()">
+          <div class="action-icon" style="background:#ECFDF5; color:#10B981; border-color:#A7F3D0;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg></div>
+          <span>Lokasi</span>
+        </button>
+        <button class="action-btn" onclick="document.getElementById('cctv-select').focus()">
+          <div class="action-icon" style="background:#FFFBEB; color:#F59E0B; border-color:#FDE68A;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></div>
+          <span>Kamera</span>
+        </button>
+        <button class="action-btn" onclick="clearLog()">
+          <div class="action-icon" style="background:#FFF1F2; color:#EC4899; border-color:#FECDD3;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+          <span>Hapus</span>
+        </button>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="custom-select-wrap">
+            <select id="cctv-select" onchange="onCctvDropdownChange()"></select>
+            <div class="select-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+          </div>
+          
+          <div class="cam-wrap">
+            <div class="cam-placeholder" id="placeholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4z"/><rect x="3" y="6" width="12" height="12" rx="2" ry="2"/></svg>
+              Sistem Standby<br><small style="font-weight: 500; color:#94A3B8">Ketuk tombol "Mulai"</small>
+            </div>
+            <video id="video" playsinline autoplay muted crossorigin="anonymous"></video>
+            <canvas id="canvas"></canvas>
+            <div id="iframe-container">
+               <iframe id="js_video_iframe" src="" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card">
+          <div class="map-header">
+            <div class="map-title">Pemetaan GIS</div>
+            <button class="btn-rute" onclick="tampilkanRuteHalte()" id="btn-rute">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              Jalur Jalan
+            </button>
+          </div>
+          <div id="map"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="card" style="background: transparent; box-shadow: none; border: none; padding: 0;">
+          <div class="log-header-vibrant">
+            <div class="card-title" style="margin-bottom:0; font-size: 18px;">Log Aktivitas AI</div>
+            <span style="font-size:11px; color:#00AED6; font-weight:700; background:#E0F2FE; padding:6px 12px; border-radius:10px; border:1px solid #BAE6FD;" id="s-fps">0 FPS</span>
+          </div>
+          <div class="log-list" id="log-list">
+            <div style="text-align:center; padding: 40px 10px; color:#94A3B8; font-size:14px; font-weight:600;" id="log-empty">Menunggu deteksi kendaraan...</div>
+          </div>
+        </div>
+      </div>
+    </div> <div id="view-report" class="view-section">
+      <div class="report-title-card">
+        <div class="report-title">Laporan Analitik</div>
+        <div class="report-desc">Data Lalu Lintas 30 Detik Terakhir</div>
+      </div>
+      
+      <div class="report-chart-card">
+        <div class="card-title" style="justify-content: center; font-size: 15px; color:#64748B;">Distribusi Kendaraan & Orang</div>
+        <div class="chart-30s-wrapper">
+          <canvas id="reportPieChart"></canvas>
+        </div>
+        
+        <div class="report-stats-grid">
+          <div class="r-stat" style="color: #00AED6; border-color: #BAE6FD;">
+            <div class="r-stat-val" id="r-car">0</div>
+            <div class="r-stat-lbl">Mobil</div>
+          </div>
+          <div class="r-stat" style="color: #10B981; border-color: #A7F3D0;">
+            <div class="r-stat-val" id="r-motor">0</div>
+            <div class="r-stat-lbl">Motor</div>
+          </div>
+          <div class="r-stat" style="color: #EF4444; border-color: #FECDD3;">
+            <div class="r-stat-val" id="r-person">0</div>
+            <div class="r-stat-lbl">Orang</div>
+          </div>
+          <div class="r-stat" style="color: #F59E0B; border-color: #FDE68A;">
+            <div class="r-stat-val" id="r-bus">0</div>
+            <div class="r-stat-lbl">Bus/Truk</div>
+          </div>
+        </div>
+      </div>
+    </div> </div> <div class="bottom-nav-wrap">
+    <div class="bottom-nav">
+      <div class="nav-item active" id="nav-home" onclick="switchView('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Beranda</span></div>
+      <div class="nav-item" id="nav-report" onclick="switchView('report')"><svg viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg><span>Laporan</span></div>
+      <div class="nav-item nav-logout" onclick="prosesLogout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Keluar</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// =========================================
+// NAVIGATION & LOGIN LOGIC
+// =========================================
+function switchView(view) {
+    document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    
+    document.getElementById('view-' + view).classList.add('active');
+    document.getElementById('nav-' + view).classList.add('active');
+    
+    if(view === 'report') updateReportUI();
+}
+
+function prosesLogin() {
+  const user = document.getElementById('username').value;
+  const pass = document.getElementById('password').value;
+  if(user === 'admin' && pass === 'admin123') {
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    setTimeout(() => { map.invalidateSize(); }, 300);
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function prosesLogout() {
+  if(running) handleMain();
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('password').value = '';
+}
+
+// =========================================
+// MODAL & VIDEO IFRAME LOGIC
+// =========================================
+let pendingCctvToPlay = null;
+
+function showModal() {
+    const modal = document.getElementById('custom-modal');
+    const box = document.getElementById('modal-box');
+    modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; box.classList.add('show'); }, 10);
+}
+
+function hideModal() {
+    const modal = document.getElementById('custom-modal');
+    const box = document.getElementById('modal-box');
+    modal.style.opacity = '0'; box.classList.remove('show');
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+}
+
+function closeModalAndPlay() {
+    hideModal();
+    if (pendingCctvToPlay) {
+        if (!running) {
+            running = true;
+            toggleButtonState('play');
+            document.getElementById('srv-dot').classList.add('on'); 
+            document.getElementById('srv-txt').textContent = 'Sistem: Online';
+        }
+        startExternalVideo(pendingCctvToPlay);
+        pendingCctvToPlay = null;
+    }
+}
+
+// =========================================
+// DATA & PETA
+// =========================================
+const routeWaypoints = [
+  L.latLng(-6.5511711, 106.7275268), L.latLng(-6.5534844, 106.7291572),
+  L.latLng(-6.5521288, 106.7327212), L.latLng(-6.5550812, 106.7345468),
+  L.latLng(-6.5580953, 106.7352831), L.latLng(-6.5588008, 106.7352596),
+  L.latLng(-6.5586392, 106.7327755), L.latLng(-6.5593937, 106.7315866)
+];
+
+const cctvData = [
+  { id: "cctv-tugu", name: "📍 Tugu Kujang", lat: -6.601442, lng: 106.805077, url: "https://restreamer2.kotabogor.go.id/memfs/5a5cf878-9d9b-4400-a73a-27a5b24a6ec4.m3u8", type: 'hls' },
+  { id: "cctv-dramaga", name: "📍 Simpang Dramaga", lat: -6.572201, lng: 106.749612, url: "https://restreamer4.kotabogor.go.id/memfs/51e9eed5-4b9a-4d45-bd04-8e3fc7485a67.m3u8", type: 'hls' },
+  { id: "cctv-pasar", name: "📍 Pasar Bogor", lat: -6.605363, lng: 106.800234, url: "https://restreamer2.kotabogor.go.id/memfs/b43066d4-b1e4-4e90-8e17-86c15a9a944e.m3u8", type: 'hls' },
+  { id: "cctv-yasmin", name: "📍 Simpang Yasmin 2", lat: -6.556048, lng: 106.778449, url: "https://restreamer5.kotabogor.go.id/memfs/fa74138a-dd7e-4f10-8174-69475584073d.m3u8", type: 'hls' },
+  { id: "cctv-muslihat", name: "📍 Kapten Muslihat", lat: -6.596667, lng: 106.793512, url: "https://restreamer2.kotabogor.go.id/memfs/3ec6eaf2-4da1-4adb-8c15-0251e69121d6.m3u8", type: 'hls' },
+  { id: "cctv-alun", name: "📍 Depan Alun-Alun Bogor", lat: -6.596050, lng: 106.791193, url: "https://restreamer2.kotabogor.go.id/memfs/c07c1926-288c-46e4-a19c-9f51022edc5d.m3u8", type: 'hls' },
+  { id: "cctv-juanda", name: "📍 Jl. Ir. H. Juanda (Sempur)", lat: -6.593027, lng: 106.797303, url: "https://restreamer2.kotabogor.go.id/memfs/2942b8fd-1f48-4c2c-b368-d0df0526367c.m3u8", type: 'hls' }
+];
+
+// Masukkan 8 titik jalan sebagai Iframe
+routeWaypoints.forEach((wp, i) => {
+  cctvData.push({ id: `titik-${i+1}`, name: `📍 Titik Jalan ${i+1} (Bara)`, lat: wp.lat, lng: wp.lng, url: "https://jumpshare.com/embed/irSZ3FqBBizh1GaIz9Yi", type: 'iframe' });
+});
+
+const map = L.map('map', { zoomControl: false, dragging: !L.Browser.mobile, tap: false }).setView([-6.5944, 106.7892], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+const cctvIcon = L.divIcon({ html: `<div style="background:#EF4444; width:16px; height:16px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 15px rgba(239,68,68,0.5);"></div>`, className: '', iconSize: [16, 16] });
+const iframeIcon = L.divIcon({ html: `<div style="background:#00AED6; width:18px; height:18px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 15px rgba(0,174,214,0.8);"></div>`, className: '', iconSize: [18, 18] });
+const titikIcon = L.divIcon({ html: `<div style="background:#0284C7; width:16px; height:16px; border-radius:50%; border:3px solid #fff; box-shadow:0 0 10px rgba(2,132,199,0.5);"></div>`, className: '', iconSize: [16, 16] });
+
+let markers = {};
+cctvData.forEach(cctv => {
+  const iconStyle = cctv.type === 'iframe' ? iframeIcon : cctvIcon;
+  const marker = L.marker([cctv.lat, cctv.lng], { icon: iconStyle }).addTo(map);
+  marker.bindPopup(`<b>${cctv.name}</b>`);
+  marker.on('click', () => { 
+      document.getElementById('cctv-select').value = cctv.id; 
+      onCctvDropdownChange(); 
+      if (!running && cctv.type !== 'iframe') handleMain(); 
+  });
+  markers[cctv.id] = marker;
+});
+
+let routingControl = null;
+let ruteAktif = false;
+function tampilkanRuteHalte() {
+  const btn = document.getElementById('btn-rute');
+  if (ruteAktif) {
+    if (routingControl) map.removeControl(routingControl);
+    ruteAktif = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Jalur Jalan`;
+    btn.style.background = '#ECFDF5'; btn.style.color = '#10B981'; btn.style.borderColor = '#A7F3D0';
+    map.flyTo([-6.5944, 106.7892], 13, { animate: true, duration: 1 });
+    return;
+  }
+  routingControl = L.Routing.control({
+    waypoints: routeWaypoints,
+    createMarker: function(i, wp) { return L.marker(wp.latLng, { icon: titikIcon }).bindPopup('Titik Jalan ' + (i + 1)); },
+    lineOptions: { styles: [{ color: '#10B981', opacity: 0.8, weight: 6 }] }, 
+    show: false, addWaypoints: false, routeWhileDragging: false, fitSelectedRoutes: true
+  }).addTo(map);
+  ruteAktif = true;
+  btn.innerHTML = `Tutup Jalur`;
+  btn.style.background = '#F1F5F9'; btn.style.color = '#64748B'; btn.style.borderColor = '#E2E8F0';
+}
+
+let myLocMarker = null;
+function findMyLocation() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition((position) => {
+    const lat = position.coords.latitude; const lng = position.coords.longitude;
+    map.flyTo([lat, lng], 14, { animate: true, duration: 1.2 });
+    if (myLocMarker) map.removeLayer(myLocMarker);
+    myLocMarker = L.marker([lat, lng], { icon: L.divIcon({ html: `<div style="background:#10B981; width:20px; height:20px; border-radius:50%; border:4px solid #fff; box-shadow:0 0 15px rgba(16,185,129,0.5);"></div>`, className: '', iconSize: [20, 20] }) }).addTo(map);
+  });
+}
+
+function initCctvList() { document.getElementById('cctv-select').innerHTML = `<option value="" disabled selected>Pilih Lokasi CCTV...</option>` + cctvData.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); }
+function onCctvDropdownChange() {
+  const cctv = cctvData.find(c => c.id === document.getElementById('cctv-select').value);
+  if (cctv) { 
+      map.flyTo([cctv.lat, cctv.lng], 16, { animate: true, duration: 1.2 }); 
+      markers[cctv.id].openPopup();
+      if (cctv.type === 'iframe') {
+          pendingCctvToPlay = cctv;
+          showModal();
+      } else {
+          if (running) { stopVideoInternal(); startExternalVideo(cctv); } 
+      }
+  }
+}
+
+// =========================================
+// AI ENGINE & 30s TRACKING REPORT
+// =========================================
+const TARGET_CLASSES = ['car', 'motorcycle', 'truck', 'bus', 'person'];
+const EMOJI_MAP = { 'car': '🚗', 'motorcycle': '🏍️', 'truck': '🚚', 'bus': '🚌', 'person': '🧍' };
+const COLOR_MAP = { 'car': '#00AED6', 'motorcycle': '#10B981', 'truck': '#F59E0B', 'bus': '#F59E0B', 'person': '#EF4444' };
+const LOG_BG_MAP = { 'car': '#E0F2FE', 'motorcycle': '#ECFDF5', 'truck': '#FEF3C7', 'bus': '#FEF3C7', 'person': '#FEE2E2' };
+const THRESHOLD_SEPI = 2; const THRESHOLD_SEDANG = 7;
+
+let detector = null, running = false, loading = false, fc = 0, fpsT = performance.now(), fps = 0, lastLogT = 0, rafId = null, hlsInstance = null;
+const video = document.getElementById('video'), canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d'), sStatus = document.getElementById('s-status');
+
+// Tracking Data 30s
+let vehicleHistory30s = [];
+let simInterval = null;
+
+let reportPieChart = null;
+
+function initReportChart() {
+    const ctxPie = document.getElementById('reportPieChart').getContext('2d');
+    reportPieChart = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+            labels: ['Mobil', 'Motor', 'Orang', 'Bus/Truk'],
+            datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#00AED6', '#10B981', '#EF4444', '#F59E0B'], borderWidth: 3, borderColor: '#fff' }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: { legend: { position: 'right', labels: { font: { family: 'Inter', size: 12, weight: 'bold' }, color: '#1E293B', boxWidth: 15, padding: 20 } } },
+            animation: { duration: 800, easing: 'easeOutQuart' }
+        }
+    });
+    setInterval(updateReportUI, 2000);
+}
+
+function trackVehicle(cls, qty) {
+    vehicleHistory30s.push({ timestamp: Date.now(), class: cls, qty: qty });
+}
+
+function updateReportUI() {
+    const now = Date.now();
+    vehicleHistory30s = vehicleHistory30s.filter(item => now - item.timestamp <= 30000);
+    
+    let cCar = 0, cMotor = 0, cPerson = 0, cBus = 0;
+    vehicleHistory30s.forEach(item => {
+        if(item.class === 'car') cCar += item.qty;
+        else if(item.class === 'motorcycle') cMotor += item.qty;
+        else if(item.class === 'person') cPerson += item.qty;
+        else cBus += item.qty;
+    });
+
+    document.getElementById('r-car').textContent = cCar;
+    document.getElementById('r-motor').textContent = cMotor;
+    document.getElementById('r-person').textContent = cPerson;
+    document.getElementById('r-bus').textContent = cBus;
+
+    if(reportPieChart) {
+        reportPieChart.data.datasets[0].data = [cCar, cMotor, cPerson, cBus];
+        reportPieChart.update();
+    }
+}
+
+async function handleMain() { 
+  if (loading) return; 
+  if (running) { stopVideo(); } else {
+    const cctv = cctvData.find(c => c.id === document.getElementById('cctv-select').value);
+    if(cctv) {
+        if(cctv.type === 'iframe') { pendingCctvToPlay = cctv; showModal(); } 
+        else { startExternalVideo(cctv); }
+    }
+  }
+}
+
+function updateCrowdedness(count) {
+    sStatus.className = 'status-pill';
+    if(count === 0) { sStatus.textContent = 'KOSONG'; }
+    else if(count <= THRESHOLD_SEPI) { sStatus.textContent = 'SEPI'; sStatus.classList.add('pill-sepi'); }
+    else if(count <= THRESHOLD_SEDANG) { sStatus.textContent = 'SEDANG'; sStatus.classList.add('pill-sedang'); }
+    else { sStatus.textContent = 'RAMAI'; sStatus.classList.add('pill-ramai'); }
+}
+
+function toggleButtonState(state) {
+  const btnIcon = document.getElementById('btn-icon'); const btnTxt = document.getElementById('btn-txt'); const placeholder = document.getElementById('placeholder');
+  if(state === 'play') {
+    btnIcon.innerHTML = `<svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" fill="currentColor"/><rect x="14" y="4" width="4" height="16" fill="currentColor"/></svg>`;
+    btnIcon.style.background = '#FEE2E2'; btnIcon.style.color = '#EF4444'; btnIcon.style.borderColor = '#FECDD3'; btnTxt.textContent = 'Stop';
+  } else if(state === 'loading') {
+    btnIcon.innerHTML = `<svg class="loading-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>`;
+    btnTxt.textContent = 'Memuat'; placeholder.innerHTML = `<svg class="loading-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg><br>Menghubungkan Stream...`;
+  } else {
+    btnIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z" fill="currentColor"/></svg>`;
+    btnIcon.style.background = '#E0F2FE'; btnIcon.style.color = '#00AED6'; btnIcon.style.borderColor = '#BAE6FD'; btnTxt.textContent = 'Mulai';
+    placeholder.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4z"/><rect x="3" y="6" width="12" height="12" rx="2" ry="2"/></svg>Sistem Standby<br><small style="font-weight: 500; color:#94A3B8">Ketuk tombol "Mulai"</small>`;
+  }
+}
+
+async function startAiAndPlay() {
+  if (!detector) { await tf.ready(); detector = await cocoSsd.load({ base: 'lite_mobilenet_v2' }); }
+  await video.play(); running = true; loading = false; toggleButtonState('play');
+  document.getElementById('srv-dot').classList.add('on'); document.getElementById('srv-txt').textContent = 'Sistem: Online';
+  detect();
+}
+
+function startSimulatedLogs() {
+    if(simInterval) clearInterval(simInterval);
+    simInterval = setInterval(() => {
+        if(!running) return;
+        const classes = ['car', 'motorcycle', 'person', 'bus'];
+        const cls = classes[Math.floor(Math.random()*classes.length)];
+        const qty = Math.floor(Math.random() * 3) + 1;
+        const namaIndo = cls==='car'?'Mobil':cls==='motorcycle'?'Motor':cls==='person'?'Orang':'Bus/Truk';
+        addLogAesthetic(`${qty}x ${namaIndo}`, EMOJI_MAP[cls], `AI Simulasi`, LOG_BG_MAP[cls], COLOR_MAP[cls]);
+        trackVehicle(cls, qty);
+        
+        // Random update stats
+        document.getElementById('s-car').textContent = Math.floor(Math.random()*5);
+        document.getElementById('s-motor').textContent = Math.floor(Math.random()*8);
+        const pCount = Math.floor(Math.random()*10);
+        document.getElementById('s-person').textContent = pCount;
+        updateCrowdedness(pCount);
+    }, 3500);
+}
+
+async function startExternalVideo(data) {
+  loading = true; stopVideoInternal(); toggleButtonState('loading');
+  document.getElementById('placeholder').style.display = 'none'; video.style.display = 'none'; canvas.style.display = 'none';
+  document.getElementById('iframe-container').style.display = 'none';
+  
+  if(data.type === 'iframe') {
+      loading = false; toggleButtonState('play');
+      document.getElementById('iframe-container').style.display = 'block';
+      document.getElementById('js_video_iframe').src = data.url;
+      addLogAesthetic('Video Simulasi', '🎥', 'Iframe Jumpshare Aktif', '#FEF3C7', '#F59E0B');
+      startSimulatedLogs();
+  } else {
+      if (Hls.isSupported()) {
+        hlsInstance = new Hls(); hlsInstance.loadSource(data.url); hlsInstance.attachMedia(video);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, async () => { document.getElementById('placeholder').style.display = 'none'; video.style.display = 'block'; canvas.style.display = 'block'; try { await startAiAndPlay(); } catch(e) { handleVidError(); } });
+        hlsInstance.on(Hls.Events.ERROR, (e,d) => { if (d.fatal) handleVidError(); });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = data.url; video.addEventListener('loadedmetadata', async () => { document.getElementById('placeholder').style.display = 'none'; video.style.display = 'block'; canvas.style.display = 'block'; try { await startAiAndPlay(); } catch (e) { handleVidError(); } }, {once: true});
+      }
+  }
+}
+
+function handleVidError() { loading = false; stopVideoInternal(); document.getElementById('placeholder').style.display = 'flex'; toggleButtonState('stop'); addLogAesthetic('Koneksi Gagal', '⚠️', 'Stream Error', '#FEE2E2', '#EF4444');}
+function stopVideoInternal() { if (rafId) cancelAnimationFrame(rafId); if (simInterval) clearInterval(simInterval); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.srcObject = null; video.src = ""; video.removeAttribute('src'); document.getElementById('js_video_iframe').src = ""; ctx.clearRect(0,0,canvas.width,canvas.height); }
+function stopVideo() { running = false; stopVideoInternal(); video.style.display = 'none'; canvas.style.display = 'none'; document.getElementById('iframe-container').style.display = 'none'; document.getElementById('placeholder').style.display = 'flex'; toggleButtonState('stop'); document.getElementById('srv-dot').className = 'status-dot'; document.getElementById('srv-txt').textContent = 'Sistem: Offline'; ['s-car','s-motor','s-person'].forEach(id => document.getElementById(id).textContent = '0'); document.getElementById('s-fps').textContent = '0 FPS'; updateCrowdedness(0); }
+
+async function detect() {
+  if (!running || !detector) return;
+  if (video.readyState >= 2 && !video.paused) {
+    if (canvas.width !== video.clientWidth) { canvas.width = video.clientWidth; canvas.height = video.clientHeight; }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let predictions = []; try { predictions = await detector.detect(video); } catch (e) {}
+    let counts = { car: 0, motor: 0, person: 0 }; let objectsToLog = {};
+    predictions.forEach(p => {
+      if (TARGET_CLASSES.includes(p.class) && p.score > 0.45) {
+        if (p.class === 'car' || p.class === 'truck' || p.class === 'bus') counts.car++;
+        else if (p.class === 'motorcycle') counts.motor++;
+        else if (p.class === 'person') counts.person++;
+        objectsToLog[p.class] = (objectsToLog[p.class] || 0) + 1;
+        const [x, y, w, h] = p.bbox; const sX = x*(canvas.width/video.videoWidth), sY = y*(canvas.height/video.videoHeight), sW = w*(canvas.width/video.videoWidth), sH = h*(canvas.height/video.videoHeight);
+        ctx.strokeStyle = COLOR_MAP[p.class] || '#fff'; ctx.lineWidth = 3; ctx.strokeRect(sX, sY, sW, sH);
+      }
+    });
+    document.getElementById('s-car').textContent = counts.car; document.getElementById('s-motor').textContent = counts.motor; document.getElementById('s-person').textContent = counts.person;
+    updateCrowdedness(counts.person);
+    const now = Date.now();
+    if (Object.keys(objectsToLog).length > 0 && now - lastLogT > 3500) {
+      lastLogT = now;
+      for (const [cls, qty] of Object.entries(objectsToLog)) { 
+        const namaIndo = cls==='car'?'Mobil':cls==='motorcycle'?'Motor':cls==='person'?'Orang':'Bus/Truk';
+        addLogAesthetic(`${qty}x ${namaIndo}`, EMOJI_MAP[cls] || '🎯', `Terdeteksi AI`, LOG_BG_MAP[cls], COLOR_MAP[cls]);
+        trackVehicle(cls, qty);
+      }
+    }
+    fc++; const t = performance.now(); if (t - fpsT >= 1000) { document.getElementById('s-fps').textContent = `${Math.round(fc * 1000 / (t - fpsT))} FPS`; fc = 0; fpsT = t; }
+  }
+  rafId = requestAnimationFrame(detect);
+}
+
+function addLogAesthetic(name, emoji, sub, bgColor, iconColor) {
+  const list = document.getElementById('log-list'); const emp = document.getElementById('log-empty'); if (emp) emp.remove();
+  const el = document.createElement('div'); el.className = 'log-item';
+  el.style.setProperty('--item-color', iconColor || '#CBD5E1'); el.style.setProperty('--item-bg', bgColor || '#F1F5F9');
+  const timeStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  el.innerHTML = `<div class="log-thumb">${emoji}</div><div class="log-info"><div class="log-name">${name}</div><div class="log-sub"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> ${sub}</div></div><div class="log-time">${timeStr}</div>`;
+  list.insertBefore(el, list.firstChild); if (list.children.length > 20) list.lastChild.remove();
+}
+function clearLog() { document.getElementById('log-list').innerHTML = '<div style="text-align:center; padding:40px 10px; color:#94A3B8; font-size:14px; font-weight:600;" id="log-empty">Menunggu deteksi kendaraan...</div>'; }
+
+initCctvList(); initReportChart();
+</script>
+</body>
+</html>
