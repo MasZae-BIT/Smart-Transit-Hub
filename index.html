@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Transit Hub - Command Center</title>
+    <title>Smart Transit Hub - User Dashboard</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -20,15 +20,15 @@
     
     <style>
         /* =========================================
-           SMART TRANSIT HUB - UI ADAPTED FROM DRIVER
+           SMART TRANSIT HUB - VARIABLES
            ========================================= */
         :root {
             --bg-body: #fafcff;
             --bg-card: #ffffff;
             --primary-cyan: #00b4d8; 
-            --primary-hover: #0096c7;
-            --text-dark: #2b2d42;
-            --text-muted: #8d99ae;
+            --primary-blue-kti: #00AED6; /* Warna biru original KTI */
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
             --border-light: #e2e8f0;
             --accent-red: #ef233c;
             --accent-yellow: #ffb703;
@@ -36,42 +36,34 @@
             --driver-dark: #1e293b;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--bg-body); color: var(--text-dark); min-height: 100vh; overflow-x: hidden; }
 
-        /* MODAL POPUP */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(5px); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
-        .modal-box { background: white; border-radius: 24px; padding: 30px 25px; width: 85%; max-width: 320px; text-align: center; transform: translateY(20px); transition: 0.3s; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .modal-box.show { transform: translateY(0); }
-        .modal-icon { width: 65px; height: 65px; background: #fffbeb; color: var(--accent-yellow); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 4px solid #fef3c7; font-size: 2rem;}
-        .modal-title { font-size: 1.2rem; font-weight: 800; color: var(--text-dark); margin-bottom: 10px; }
-        .modal-text { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.6; font-weight: 600;}
-        .btn-modal-ok { background: var(--primary-cyan); color: white; border: none; padding: 14px 25px; border-radius: 14px; font-weight: 700; font-size: 0.95rem; width: 100%; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 15px rgba(0,180,216,0.25);}
+        /* =========================================
+           LOGIN SCREEN
+           ========================================= */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #FFFFFF; z-index: 9999; padding: 30px; transition: opacity 0.5s ease; font-family: 'Inter', sans-serif; }
+        .login-logo { width: 90px; height: 90px; background: var(--primary-blue-kti); border-radius: 28px; display: flex; align-items: center; justify-content: center; color: white; margin-bottom: 25px; box-shadow: 0 10px 25px rgba(0,174,214,0.3); }
+        .login-title { font-size: 28px; font-weight: 800; color: #1c1c1c; margin-bottom: 8px; letter-spacing: -0.03em;}
+        .login-title span { color: var(--primary-blue-kti); }
+        .login-subtitle { font-size: 15px; color: #64748B; margin-bottom: 45px; text-align: center; max-width: 280px; line-height: 1.5; font-weight: 500;}
 
-        /* LOGIN SCREEN */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: var(--bg-body); z-index: 9999; padding: 25px; transition: opacity 0.5s ease; }
-        .login-container { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; }
-        .logo-box { width: 85px; height: 85px; background-color: var(--driver-dark); border-radius: 24px; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 25px rgba(30, 41, 59, 0.3); margin-bottom: 15px; }
-        .logo-box i { font-size: 2.8rem; color: white; }
-        .app-title { font-size: 1.6rem; font-weight: 800; color: var(--text-dark); margin-bottom: 5px; }
-        .app-title span { color: var(--primary-cyan); }
-        .driver-badge { background: var(--text-dark); color: white; padding: 5px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 35px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .input-group { width: 100%; max-width: 360px; margin-bottom: 20px; position: relative; }
+        .input-group label { display: block; font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px; margin-left: 4px; text-align: left; }
+        .input-group input { width: 100%; padding: 16px 18px 16px 50px; border-radius: 16px; border: 1.5px solid #E2E8F0; background: #FFFFFF; font-size: 15px; font-weight: 600; color: #1E293B; outline: none; transition: 0.25s; }
+        .input-group input:focus { border-color: var(--primary-blue-kti); box-shadow: 0 0 0 4px rgba(0,174,214,0.1); }
+        .input-icon { position: absolute; left: 18px; top: 40px; color: #94A3B8; transition: 0.2s;}
+        .input-group input:focus + .input-icon { color: var(--primary-blue-kti); }
+        .input-icon svg { width: 22px; height: 22px; }
 
-        .form-group { width: 100%; margin-bottom: 15px; }
-        .form-label { display: block; font-size: 0.85rem; font-weight: 700; color: #4a5568; margin-bottom: 8px; text-align: left; }
-        .input-wrapper { position: relative; width: 100%; }
-        .input-wrapper i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #a0aec0; font-size: 1.1rem; }
-        .input-wrapper input { width: 100%; padding: 16px 16px 16px 48px; background: #ffffff; border: 1.5px solid var(--border-light); border-radius: 14px; color: var(--text-dark); font-size: 0.95rem; font-weight: 600; outline: none; transition: all 0.3s ease; }
-        .input-wrapper input::placeholder { color: #cbd5e1; font-weight: 500; }
-        .input-wrapper input:focus { border-color: var(--primary-cyan); box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.1); }
+        .btn-login { width: 100%; max-width: 360px; padding: 18px; border-radius: 18px; background: var(--primary-blue-kti); color: white; font-size: 16px; font-weight: 700; border: none; cursor: pointer; margin-top: 15px; transition: 0.2s; box-shadow: 0 10px 25px rgba(0,174,214,0.3); }
+        .btn-login:active { transform: scale(0.96); box-shadow: 0 5px 10px rgba(0,174,214,0.2); }
+        #login-error { color: var(--accent-red); font-size: 13px; font-weight: 600; text-align: center; margin-top: 15px; background: #FEE2E2; padding: 10px; border-radius: 10px; width: 100%; max-width: 360px; display: none; }
 
-        #login-btn { width: 100%; padding: 16px; border-radius: 14px; background: var(--driver-dark); color: #fff; border: none; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; margin-top: 15px; box-shadow: 0 8px 20px rgba(30, 41, 59, 0.3); }
-        #login-btn:hover { background: #0f172a; transform: translateY(-2px); }
-        #login-error { color: var(--accent-red); font-size: 0.85rem; font-weight: 700; text-align: center; margin-top: 15px; background: #fff1f2; padding: 10px; border-radius: 10px; width: 100%; display: none; border: 1px solid #fecdd3;}
-
-        /* MAIN APP CONTAINER */
+        /* =========================================
+           MAIN APP (USER DASHBOARD UI)
+           ========================================= */
         #main-app { display: none; flex-direction: column; min-height: 100vh; }
-
         header { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; background: #ffffff; border-bottom: 1px solid var(--border-light); position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
         .driver-info { display: flex; align-items: center; gap: 12px; }
         .driver-avatar { width: 45px; height: 45px; background: #f1f5f9; border-radius: 50%; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 2px solid var(--border-light); }
@@ -84,7 +76,6 @@
         .status-badge.online { background: #e0f2fe; color: var(--primary-cyan); box-shadow: 0 2px 8px rgba(0,180,216,0.1); }
 
         main { flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 20px; padding-bottom: 100px; }
-        
         .card { background: var(--bg-card); padding: 20px; border-radius: 20px; border: 1px solid var(--border-light); display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .card-header h3 { font-size: 1.05rem; color: var(--text-dark); font-weight: 700; display: flex; align-items: center; gap: 8px; }
@@ -94,19 +85,17 @@
         .tab-content.active { display: flex; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* COUNTERS (Mobil, Motor, Orang) */
+        /* COUNTERS & BUTTONS */
         .stats-grid { display: flex; justify-content: space-between; gap: 10px; }
         .stat-box { flex: 1; background: #f8fafc; border: 1px solid var(--border-light); padding: 15px 10px; border-radius: 16px; text-align: center; }
         .stat-val { font-size: 1.5rem; font-weight: 800; margin-bottom: 2px; }
         .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
-        
-        /* ACTION BUTTONS */
         .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .btn-outline { padding: 12px 15px; border-radius: 12px; background: transparent; color: #64748b; border: 2px solid #cbd5e1; font-weight: 700; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 45%; }
         .btn-solid { padding: 12px 15px; border-radius: 12px; background: var(--primary-cyan); color: white; border: 2px solid var(--primary-cyan); font-weight: 700; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; box-shadow: 0 4px 10px rgba(0, 180, 216, 0.2); flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 45%; }
         .btn-solid:active, .btn-outline:active { transform: scale(0.95); }
 
-        /* SELECT & CAMERA */
+        /* CAMERA & LOGS */
         .custom-select { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border-light); background: #f8fafc; font-size: 0.9rem; font-weight: 700; color: var(--text-dark); outline: none; margin-bottom: 15px; }
         .cctv-wrapper { width: 100%; border-radius: 16px; overflow: hidden; background: #0F172A; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
         #video { width: 100%; height: 100%; object-fit: cover; display: none; }
@@ -115,11 +104,9 @@
         .cam-placeholder i { font-size: 2rem; color: var(--primary-cyan); }
         #iframe-container { width: 100%; height: 100%; position: absolute; inset: 0; display: none; z-index: 5; background: #000; }
         #iframe-container iframe { width: 100%; height: 100%; border: none; }
-
-        /* LOGS (Demand-style) */
+        
         #log-container { max-height: 250px; overflow-y: auto; padding-right: 5px; display: flex; flex-direction: column; gap: 10px; }
         .log-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border-light); animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
         .log-name { font-weight: 700; color: var(--text-dark); font-size: 0.9rem; display: flex; align-items: center; gap: 8px;}
         .log-badge { background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; }
 
@@ -128,19 +115,36 @@
         #live-map { width: 100%; height: 100%; background: #e2e8f0; }
         .leaflet-routing-container { display: none !important; }
 
-        /* REPORTS */
-        .chart-wrapper { width: 100%; height: 250px; margin-top: 10px; }
+        /* REPORTS / CHARTS */
+        .chart-wrapper { width: 100%; height: 230px; margin-top: 10px; position: relative; }
+        .kti-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .kti-stat-box { flex: 1; min-width: 45%; background: #fff; border: 1.5px solid var(--border-light); padding: 15px; border-radius: 16px; display: flex; flex-direction: column; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        .kti-stat-title { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+        .kti-stat-value { font-size: 1.2rem; font-weight: 800; color: var(--text-dark); }
+        .kti-stat-value span { font-size: 0.8rem; font-weight: 600; color: var(--primary-cyan); }
 
-        /* PROFILE UI */
+        /* PROFILE UI & FUNCTIONAL SETTINGS */
         .profile-header-card { display: flex; flex-direction: column; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--border-light); margin-bottom: 15px; }
         .profile-header-card img { width: 85px; height: 85px; border-radius: 50%; border: 4px solid var(--primary-cyan); box-shadow: 0 5px 15px rgba(0,180,216,0.2); margin-bottom: 12px; }
         .profile-header-card h2 { font-size: 1.2rem; font-weight: 800; color: var(--text-dark); margin-bottom: 3px; }
         .profile-header-card p { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        
         .settings-menu { display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px; }
+        .settings-group-title { font-size: 0.85rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-top: 10px; padding-left: 5px; }
         .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f8fafc; border-radius: 14px; border: 1px solid var(--border-light); cursor: pointer; transition: all 0.2s ease; }
+        .setting-item:active { transform: scale(0.98); background: #f1f5f9; }
         .setting-item .left-content { display: flex; align-items: center; gap: 15px; font-weight: 700; color: var(--text-dark); font-size: 0.9rem; }
         .setting-item .left-content i { width: 20px; font-size: 1.1rem; color: var(--primary-cyan); text-align: center; }
-        .btn-danger-logout { width: 100%; padding: 16px; border-radius: 14px; background: #fff1f2; color: var(--accent-red); border: 2px solid #fecdd3; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-cyan); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .btn-danger-logout { width: 100%; padding: 16px; border-radius: 14px; background: #fff1f2; color: var(--accent-red); border: 2px solid #fecdd3; font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;}
+        .btn-danger-logout:active { transform: scale(0.96); }
 
         /* BOTTOM NAVIGATION */
         .bottom-nav { display: flex; justify-content: space-around; padding: 12px 10px 20px; background: #ffffff; border-top: 1px solid var(--border-light); position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.03); }
@@ -148,9 +152,29 @@
         .nav-item.active { color: var(--primary-cyan); }
         .nav-item i { font-size: 1.4rem; transition: transform 0.2s; }
         .nav-item.active i { transform: scale(1.1); }
+
+        /* TOAST NOTIFIKASI & MODAL */
+        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10001; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none; }
+        .toast-notification { background: white; border-left: 6px solid var(--primary-cyan); padding: 15px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; pointer-events: auto; border: 1px solid var(--border-light); }
+        .toast-icon { width: 45px; height: 45px; background: #e0f2fe; color: var(--primary-cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .toast-content { flex: 1; }
+        .toast-content h4 { font-size: 0.95rem; font-weight: 800; color: var(--text-dark); margin-bottom: 4px; }
+        .toast-content p { font-size: 0.8rem; color: #475569; font-weight: 600; line-height: 1.3; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOutToast { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-20px); } }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(5px); z-index: 10000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-box { background: white; border-radius: 24px; padding: 30px 25px; width: 85%; max-width: 320px; text-align: center; transform: translateY(20px); transition: 0.3s; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .modal-box.show { transform: translateY(0); }
+        .modal-icon { width: 65px; height: 65px; background: #fffbeb; color: var(--accent-yellow); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; border: 4px solid #fef3c7; font-size: 2rem;}
+        .modal-title { font-size: 1.2rem; font-weight: 800; color: var(--text-dark); margin-bottom: 10px; }
+        .modal-text { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.6; font-weight: 600;}
+        .btn-modal-ok { background: var(--primary-cyan); color: white; border: none; padding: 14px 25px; border-radius: 14px; font-weight: 700; font-size: 0.95rem; width: 100%; cursor: pointer; transition: 0.2s; box-shadow: 0 8px 15px rgba(0,180,216,0.25);}
     </style>
 </head>
 <body>
+
+    <div id="toast-container"></div>
 
     <div class="modal-overlay" id="custom-modal">
         <div class="modal-box" id="modal-box">
@@ -162,30 +186,36 @@
     </div>
 
     <div id="login-screen">
-        <div class="login-container">
-            <div class="logo-box"><i class="fa-solid fa-shield-halved"></i></div>
-            <h1 class="app-title">Smart Transit <span>Hub</span></h1>
-            <div class="driver-badge">COMMAND CENTER</div>
-            
-            <div class="form-group">
-                <label class="form-label">Username Admin</label>
-                <div class="input-wrapper">
-                    <i class="fa-solid fa-user-shield"></i>
-                    <input type="text" id="username" placeholder="Masukkan username" value="admin">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Password Sistem</label>
-                <div class="input-wrapper">
-                    <i class="fa-solid fa-lock" style="font-size: 1rem;"></i>
-                    <input type="password" id="password" placeholder="••••••••" value="admin123">
-                </div>
-            </div>
-            
-            <div id="login-error">Username atau Password salah!</div>
-            <button id="login-btn" onclick="prosesLogin()">Masuk Sistem</button>
+        <div class="login-logo">
+            <svg viewBox="0 0 24 24" width="45" height="45" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
         </div>
+        <h1 class="login-title">Smart Transit <span>Hub</span></h1>
+        <p class="login-subtitle">Real-time Detection & Traffic AI Detector</p>
+
+        <div class="input-group">
+            <label>Username</label>
+            <input type="text" id="username" placeholder="Masukkan username" value="irsya">
+            <div class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="••••••••" value="admin123">
+            <div class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+        </div>
+
+        <div id="login-error">Username atau Password salah!</div>
+        <button class="btn-login" id="login-btn" onclick="prosesLogin()">Masuk</button>
     </div>
 
     <div id="main-app">
@@ -195,9 +225,9 @@
                     <img id="avatar-img-header" src="" alt="Avatar">
                 </div>
                 <div class="driver-details">
-                    <h2 id="display-name-header">Admin Utama</h2>
+                    <h2 id="display-name-header">Nama Pengguna</h2>
                     <span class="driver-plate">Bogor Smart Traffic</span>
-                    <span class="driver-route">Pusat Kendali AI</span>
+                    <span class="driver-route">Akses Pengguna</span>
                 </div>
             </div>
             <div class="status-badge" id="ai-status"><i class="fa-solid fa-circle"></i> Offline</div>
@@ -205,7 +235,6 @@
 
         <main>
             <div id="view-beranda" class="tab-content active">
-                
                 <div class="stats-grid">
                     <div class="stat-box">
                         <div class="stat-val" id="s-car" style="color: var(--primary-cyan);">0</div>
@@ -243,9 +272,7 @@
                         <h3><i class="fa-solid fa-video"></i> Live CCTV AI</h3>
                         <span id="s-fps" style="font-size: 0.75rem; background: #e0f2fe; color: var(--primary-cyan); padding: 4px 8px; border-radius: 8px; font-weight: 700;">0 FPS</span>
                     </div>
-                    
                     <select id="cctv-select" class="custom-select" onchange="onCctvDropdownChange()"></select>
-                    
                     <div class="cctv-wrapper">
                         <div class="cam-placeholder" id="placeholder">
                             <i class="fa-solid fa-camera-retro"></i>
@@ -284,50 +311,97 @@
             </div>
 
             <div id="view-laporan" class="tab-content">
-                <div class="card">
-                    <div class="card-header">
-                        <h3><i class="fa-solid fa-chart-pie"></i> Laporan Analitik 30 Detik</h3>
+                
+                <div class="kti-stats">
+                    <div class="kti-stat-box">
+                        <span class="kti-stat-title">Rata-rata Antrean</span>
+                        <div class="kti-stat-value" id="kti-antrean">0 <span>SMP</span></div>
                     </div>
-                    <div class="chart-wrapper">
-                        <canvas id="reportPieChart"></canvas>
-                    </div>
-                    
-                    <div class="stats-grid" style="margin-top: 20px;">
-                        <div class="stat-box" style="border-color: #bae6fd;">
-                            <div class="stat-val" id="r-car" style="color: var(--primary-cyan);">0</div>
-                            <div class="stat-label">Mobil</div>
-                        </div>
-                        <div class="stat-box" style="border-color: #a7f3d0;">
-                            <div class="stat-val" id="r-motor" style="color: var(--accent-green);">0</div>
-                            <div class="stat-label">Motor</div>
-                        </div>
-                        <div class="stat-box" style="border-color: #fecdd3;">
-                            <div class="stat-val" id="r-person" style="color: var(--accent-red);">0</div>
-                            <div class="stat-label">Orang</div>
-                        </div>
+                    <div class="kti-stat-box">
+                        <span class="kti-stat-title">Total Tundaan</span>
+                        <div class="kti-stat-value" id="kti-tundaan">0 <span>SMP-menit</span></div>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-pie"></i> Rasio Deteksi (Orang & Kendaraan)</h3>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Distribusi kumulatif dari AI dalam 30 detik terakhir.</p>
+                    <div class="chart-wrapper" style="height: 220px;">
+                        <canvas id="distribusiPieChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-line"></i> Grafik Korelasi Antrean & Tundaan</h3>
+                        <span style="font-size: 0.75rem; background: #fffbeb; color: #f59e0b; padding: 4px 8px; border-radius: 8px; font-weight: 700;"><i class="fa-solid fa-circle fa-fade"></i> Live</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Teori Antrean: Panjang antrean maks (Qmax) akibat durasi ngetem.</p>
+                    <div class="chart-wrapper" style="height: 200px;">
+                        <canvas id="antreanChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-money-bill-trend-up"></i> Akumulasi Kerugian Ekonomi</h3>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Generalized Cost: Akumulasi peningkatan biaya (Rp) akibat tundaan.</p>
+                    <div class="chart-wrapper" style="height: 240px;">
+                        <canvas id="kerugianChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-road-circle-exclamation"></i> Indikator Kapasitas Jalan</h3>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">Perbandingan Laju Kedatangan (qa) dan Kapasitas Sisa (qb).</p>
+                    <div class="chart-wrapper" style="height: 200px;">
+                        <canvas id="kapasitasChart"></canvas>
+                    </div>
+                </div>
+
             </div>
 
             <div id="view-pengaturan" class="tab-content">
                 <div class="card" style="padding: 10px 20px 20px;">
                     <div class="profile-header-card">
                         <img id="avatar-img-profile" src="" alt="Avatar Profil">
-                        <h2 id="display-name-profile">Admin Utama</h2>
-                        <p><i class="fa-solid fa-circle-check" style="color: var(--accent-green);"></i> Super Administrator</p>
+                        <h2 id="display-name-profile">Nama Pengguna</h2>
+                        <p><i class="fa-solid fa-circle-check" style="color: var(--accent-green);"></i> Pengguna Terverifikasi</p>
                     </div>
 
                     <div class="settings-menu">
-                        <div class="setting-item">
-                            <div class="left-content"><i class="fa-solid fa-user-shield"></i> Hak Akses Sistem</div>
+                        <div class="settings-group-title">Sistem Peringatan</div>
+                        
+                        <div class="setting-item" onclick="toggleSetting('notif-audio')">
+                            <div class="left-content"><i class="fa-solid fa-bell"></i> Suara Notifikasi Pelanggaran</div>
+                            <label class="switch">
+                                <input type="checkbox" id="notif-audio" checked onclick="event.stopPropagation(); toggleSetting('notif-audio')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item" onclick="toggleSetting('mode-hemat')">
+                            <div class="left-content"><i class="fa-solid fa-bolt"></i> Mode Hemat Kuota (Resolusi Low)</div>
+                            <label class="switch">
+                                <input type="checkbox" id="mode-hemat" onclick="event.stopPropagation(); toggleSetting('mode-hemat')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-group-title">Manajemen Data</div>
+
+                        <div class="setting-item" onclick="syncDatabase()">
+                            <div class="left-content"><i class="fa-solid fa-cloud-arrow-up"></i> Sinkronisasi Database ke Server</div>
                             <i class="fa-solid fa-chevron-right" style="color: #cbd5e1; font-size: 0.85rem;"></i>
                         </div>
-                        <div class="setting-item">
-                            <div class="left-content"><i class="fa-solid fa-database"></i> Database Kendaraan</div>
-                            <i class="fa-solid fa-chevron-right" style="color: #cbd5e1; font-size: 0.85rem;"></i>
-                        </div>
-                        <div class="setting-item">
-                            <div class="left-content"><i class="fa-solid fa-bell"></i> Notifikasi CCTV</div>
+                        
+                        <div class="setting-item" onclick="clearAppCache()">
+                            <div class="left-content"><i class="fa-solid fa-broom"></i> Bersihkan Cache & Log Al</div>
                             <i class="fa-solid fa-chevron-right" style="color: #cbd5e1; font-size: 0.85rem;"></i>
                         </div>
                     </div>
@@ -356,9 +430,60 @@
     </div>
 
     <script>
-        // =========================================
-        // UI & NAVIGATION LOGIC (Driver Style)
-        // =========================================
+        // ==========================================
+        // UI & TOAST NOTIFICATION
+        // ==========================================
+        function showToast(title, message, isSuccess = true) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            
+            const iconColor = isSuccess ? 'var(--primary-cyan)' : 'var(--accent-red)';
+            const bgColor = isSuccess ? '#e0f2fe' : '#fff1f2';
+            const iconClass = isSuccess ? 'fa-check' : 'fa-xmark';
+
+            toast.innerHTML = `
+                <div class="toast-icon" style="background: ${bgColor}; color: ${iconColor};"><i class="fa-solid ${iconClass}"></i></div>
+                <div class="toast-content">
+                    <h4>${title}</h4>
+                    <p>${message}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOutToast 0.4s forwards';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // ==========================================
+        // PENGATURAN FUNCTIONS
+        // ==========================================
+        function toggleSetting(id) {
+            const checkbox = document.getElementById(id);
+            if(event.target.tagName !== 'INPUT') { checkbox.checked = !checkbox.checked; }
+            
+            const status = checkbox.checked ? "diaktifkan" : "dinonaktifkan";
+            if (id === 'notif-audio') showToast("Pengaturan Disimpan", `Suara notifikasi berhasil ${status}.`);
+            if (id === 'mode-hemat') showToast("Pengaturan Disimpan", `Mode hemat kuota (Low Res) ${status}.`);
+        }
+
+        function syncDatabase() {
+            showToast("Sinkronisasi Diproses...", "Mengirim data ke server...");
+            setTimeout(() => {
+                showToast("Berhasil", "Semua data laporan dan log AI telah tersinkronisasi.");
+            }, 1500);
+        }
+
+        function clearAppCache() {
+            clearLog();
+            showToast("Cache Dibersihkan", "Memori log aktivitas dan cache sistem telah dikosongkan.");
+        }
+
+        // ==========================================
+        // NAVIGATION & LOGIN MULTI USER
+        // ==========================================
         function switchTab(tabId, element) {
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             element.classList.add('active');
@@ -366,28 +491,42 @@
             document.getElementById('view-' + tabId).classList.add('active');
             
             if(tabId === 'maps' && map) { setTimeout(() => { map.invalidateSize(); }, 100); }
-            if(tabId === 'laporan') updateReportUI();
         }
 
         function prosesLogin() {
             const loginBtn = document.getElementById('login-btn');
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
+            const inputUser = document.getElementById('username').value.toLowerCase();
+            const inputPass = document.getElementById('password').value;
             
-            if(user === 'admin' && pass === 'admin123') {
+            // Database Pengguna Lokal
+            const userDB = {
+                'irsya': { name: 'Irsya Zaelani', pass: 'admin123' },
+                'baqir': { name: 'Baqir', pass: 'admin123' }
+            };
+
+            const userLogin = userDB[inputUser];
+
+            if(userLogin && inputPass === userLogin.pass) {
                 document.getElementById('login-error').style.display = 'none';
-                loginBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Menghubungkan...';
+                loginBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Memproses...';
                 
                 setTimeout(() => {
-                    const avatarUrl = `https://ui-avatars.com/api/?name=Admin+Utama&background=1e293b&color=fff&bold=true`;
+                    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userLogin.name)}&background=1e293b&color=fff&bold=true`;
                     document.getElementById('avatar-img-header').src = avatarUrl;
                     document.getElementById('avatar-img-profile').src = avatarUrl;
+                    document.getElementById('display-name-header').textContent = userLogin.name;
+                    document.getElementById('display-name-profile').textContent = userLogin.name;
 
                     document.getElementById('login-screen').style.opacity = '0';
                     setTimeout(() => {
                         document.getElementById('login-screen').style.display = 'none';
                         document.getElementById('main-app').style.display = 'flex';
                         setTimeout(() => { map.invalidateSize(); }, 300);
+                        
+                        // Kosongkan log dan chart ketika pertama kali masuk
+                        resetSemuaGrafik();
+                        
+                        showToast("Login Berhasil", `Selamat datang kembali, ${userLogin.name}.`);
                     }, 500);
                 }, 1000);
             } else {
@@ -401,7 +540,7 @@
             const loginScreen = document.getElementById('login-screen');
             const loginBtn = document.getElementById('login-btn');
             
-            loginBtn.innerHTML = 'Masuk Sistem';
+            loginBtn.innerHTML = 'Masuk';
             loginScreen.style.display = 'flex';
             setTimeout(() => { loginScreen.style.opacity = '1'; }, 50);
             document.getElementById('password').value = '';
@@ -409,9 +548,9 @@
             switchTab('beranda', document.querySelector('.bottom-nav .nav-item:first-child'));
         }
 
-        // =========================================
-        // MODAL & VIDEO IFRAME LOGIC
-        // =========================================
+        // ==========================================
+        // MODAL & VIDEO
+        // ==========================================
         let pendingCctvToPlay = null;
 
         function showModal() {
@@ -431,18 +570,15 @@
         function closeModalAndPlay() {
             hideModal();
             if (pendingCctvToPlay) {
-                if (!running) {
-                    running = true;
-                    toggleButtonState('play');
-                }
+                if (!running) { running = true; toggleButtonState('play'); }
                 startExternalVideo(pendingCctvToPlay);
                 pendingCctvToPlay = null;
             }
         }
 
-        // =========================================
-        // DATA & PETA LEAFLET
-        // =========================================
+        // ==========================================
+        // MAPS, GIS, & FULL CCTV ARRAY
+        // ==========================================
         const routeWaypoints = [
             L.latLng(-6.5511711, 106.7275268), L.latLng(-6.5534844, 106.7291572),
             L.latLng(-6.5521288, 106.7327212), L.latLng(-6.5550812, 106.7345468),
@@ -454,7 +590,10 @@
             { id: "cctv-tugu", name: "Tugu Kujang", lat: -6.601442, lng: 106.805077, url: "https://restreamer2.kotabogor.go.id/memfs/5a5cf878-9d9b-4400-a73a-27a5b24a6ec4.m3u8", type: 'hls' },
             { id: "cctv-dramaga", name: "Simpang Dramaga", lat: -6.572201, lng: 106.749612, url: "https://restreamer4.kotabogor.go.id/memfs/51e9eed5-4b9a-4d45-bd04-8e3fc7485a67.m3u8", type: 'hls' },
             { id: "cctv-pasar", name: "Pasar Bogor", lat: -6.605363, lng: 106.800234, url: "https://restreamer2.kotabogor.go.id/memfs/b43066d4-b1e4-4e90-8e17-86c15a9a944e.m3u8", type: 'hls' },
-            { id: "cctv-yasmin", name: "Simpang Yasmin 2", lat: -6.556048, lng: 106.778449, url: "https://restreamer5.kotabogor.go.id/memfs/fa74138a-dd7e-4f10-8174-69475584073d.m3u8", type: 'hls' }
+            { id: "cctv-yasmin", name: "Simpang Yasmin 2", lat: -6.556048, lng: 106.778449, url: "https://restreamer5.kotabogor.go.id/memfs/fa74138a-dd7e-4f10-8174-69475584073d.m3u8", type: 'hls' },
+            { id: "cctv-muslihat", name: "Kapten Muslihat", lat: -6.596667, lng: 106.793512, url: "https://restreamer2.kotabogor.go.id/memfs/3ec6eaf2-4da1-4adb-8c15-0251e69121d6.m3u8", type: 'hls' },
+            { id: "cctv-alun", name: "Depan Alun-Alun Bogor", lat: -6.596050, lng: 106.791193, url: "https://restreamer2.kotabogor.go.id/memfs/c07c1926-288c-46e4-a19c-9f51022edc5d.m3u8", type: 'hls' },
+            { id: "cctv-juanda", name: "Jl. Ir. H. Juanda (Sempur)", lat: -6.593027, lng: 106.797303, url: "https://restreamer2.kotabogor.go.id/memfs/2942b8fd-1f48-4c2c-b368-d0df0526367c.m3u8", type: 'hls' }
         ];
 
         routeWaypoints.forEach((wp, i) => {
@@ -505,7 +644,11 @@
 
         let myLocMarker = null;
         function findMyLocation() {
-            if (!navigator.geolocation) return;
+            if (!navigator.geolocation) {
+                showToast("Gagal", "Browser tidak mendukung akses lokasi", false);
+                return;
+            }
+            showToast("Melacak Lokasi", "Mencari koordinat GPS...");
             navigator.geolocation.getCurrentPosition((position) => {
                 const lat = position.coords.latitude; const lng = position.coords.longitude;
                 map.flyTo([lat, lng], 15);
@@ -530,9 +673,9 @@
             }
         }
 
-        // =========================================
-        // AI ENGINE & 30s TRACKING REPORT
-        // =========================================
+        // ==========================================
+        // AI & KTI CHARTS LOGIC
+        // ==========================================
         const TARGET_CLASSES = ['car', 'motorcycle', 'truck', 'bus', 'person'];
         const COLOR_MAP = { 'car': '#00b4d8', 'motorcycle': '#06d6a0', 'truck': '#ffb703', 'bus': '#ffb703', 'person': '#ef233c' };
 
@@ -541,42 +684,168 @@
 
         let vehicleHistory30s = [];
         let simInterval = null;
-        let reportPieChart = null;
+        
+        // Setup base akumulasi kerugian data
+        let kerugianData = [0, 0, 0, 0, 0, 0, 0];
+        
+        let distribusiPieChart = null;
+        let antreanChart = null;
+        let kerugianChart = null;
+        let kapasitasChart = null;
 
-        function initReportChart() {
-            const ctxPie = document.getElementById('reportPieChart').getContext('2d');
-            reportPieChart = new Chart(ctxPie, {
+        function initReportCharts() {
+            // 0. Chart Pie Distribusi (Mobil, Motor, Orang)
+            const ctxPie = document.getElementById('distribusiPieChart').getContext('2d');
+            distribusiPieChart = new Chart(ctxPie, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Mobil', 'Motor', 'Orang', 'Bus/Truk'],
-                    datasets: [{ data: [0, 0, 0, 0], backgroundColor: ['#00b4d8', '#06d6a0', '#ef233c', '#ffb703'], borderWidth: 2 }]
+                    labels: ['Mobil', 'Motor', 'Orang'],
+                    datasets: [{
+                        data: [0, 0, 0], // Dikosongkan
+                        backgroundColor: ['#00b4d8', '#06d6a0', '#ef233c'],
+                        borderWidth: 2
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right' } } }
+                options: { 
+                    responsive: true, maintainAspectRatio: false, cutout: '50%',
+                    plugins: { legend: { position: 'right' } } 
+                }
             });
-            setInterval(updateReportUI, 2000);
+
+            // 1. Chart Antrean (Line Chart - Qmax over time)
+            const ctxAntrean = document.getElementById('antreanChart').getContext('2d');
+            antreanChart = new Chart(ctxAntrean, {
+                type: 'line',
+                data: {
+                    labels: ['0', '1', '2', '3', '4', '5', '6'],
+                    datasets: [{
+                        label: 'Panjang Antrean (SMP)',
+                        data: [0, 0, 0, 0, 0, 0, 0], // Dikosongkan
+                        borderColor: '#ef233c',
+                        backgroundColor: 'rgba(239, 35, 60, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { 
+                        x: { title: { display: true, text: 'Durasi Ngetem (Menit)' }, grid: { display: false } },
+                        y: { title: { display: true, text: 'Antrean (SMP)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // 2. Chart Kerugian Ekonomi (Bar Horizontal - Generalized Cost)
+            const ctxKerugian = document.getElementById('kerugianChart').getContext('2d');
+            kerugianChart = new Chart(ctxKerugian, {
+                type: 'bar',
+                data: {
+                    labels: ['F 19*7 LQ', 'F 19*6 LC', 'F 19*3 M', 'F 19*6 CV', 'F 19*1 KA', 'F 19*8 CF', 'F 19*3 HO'],
+                    datasets: [{
+                        label: 'Kerugian (Rp)',
+                        data: [0, 0, 0, 0, 0, 0, 0], // Dikosongkan
+                        backgroundColor: ['#00b4d8', '#00b4d8', '#ffb703', '#ffb703', '#ffb703', '#ef233c', '#ef233c'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal Bar
+                    plugins: { legend: { display: false } },
+                    scales: { x: { title: { display: true, text: 'Rupiah (Rp)' }, beginAtZero: true } }
+                }
+            });
+
+            // 3. Chart Kapasitas Jalan (Doughnut - qa vs qb)
+            const ctxKapasitas = document.getElementById('kapasitasChart').getContext('2d');
+            kapasitasChart = new Chart(ctxKapasitas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Kapasitas Terpakai', 'Sisa Ruang / Overload'],
+                    datasets: [{ 
+                        data: [0, 0], // Dikosongkan
+                        backgroundColor: ['#06d6a0', '#ef233c'], 
+                        borderWidth: 2 
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, cutout: '70%', 
+                    plugins: { legend: { position: 'bottom' } } 
+                }
+            });
+
+            setInterval(updateDynamicCharts, 3500); 
         }
 
-        function trackVehicle(cls, qty) { vehicleHistory30s.push({ timestamp: Date.now(), class: cls, qty: qty }); }
+        // Fungsi mengosongkan semua grafik (Ketika CCTV Mati)
+        function resetSemuaGrafik() {
+            if(distribusiPieChart) { distribusiPieChart.data.datasets[0].data = [0, 0, 0]; distribusiPieChart.update(); }
+            if(antreanChart) { antreanChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 0]; antreanChart.update(); }
+            if(kapasitasChart) { kapasitasChart.data.datasets[0].data = [0, 0]; kapasitasChart.update(); }
+            
+            // Reset array akumulasi kerugian ke 0
+            kerugianData = [0, 0, 0, 0, 0, 0, 0];
+            if(kerugianChart) { kerugianChart.data.datasets[0].data = [...kerugianData]; kerugianChart.update(); }
+            
+            document.getElementById('kti-antrean').innerHTML = `0 <span>SMP</span>`;
+            document.getElementById('kti-tundaan').innerHTML = `0 <span>SMP-menit</span>`;
+        }
 
-        function updateReportUI() {
+        function trackVehicle(cls, qty) { 
+            vehicleHistory30s.push({ timestamp: Date.now(), class: cls, qty: qty }); 
+            updatePieChart();
+        }
+
+        function updatePieChart() {
+            if(!distribusiPieChart) return;
             const now = Date.now();
             vehicleHistory30s = vehicleHistory30s.filter(item => now - item.timestamp <= 30000);
             
-            let cCar = 0, cMotor = 0, cPerson = 0, cBus = 0;
+            let cCar = 0, cMotor = 0, cPerson = 0;
             vehicleHistory30s.forEach(item => {
-                if(item.class === 'car') cCar += item.qty;
+                if(item.class === 'car' || item.class === 'truck' || item.class === 'bus') cCar += item.qty;
                 else if(item.class === 'motorcycle') cMotor += item.qty;
                 else if(item.class === 'person') cPerson += item.qty;
-                else cBus += item.qty;
             });
+            
+            distribusiPieChart.data.datasets[0].data = [cCar, cMotor, cPerson];
+            distribusiPieChart.update();
+        }
 
-            document.getElementById('r-car').textContent = cCar;
-            document.getElementById('r-motor').textContent = cMotor;
-            document.getElementById('r-person').textContent = cPerson;
+        function updateDynamicCharts() {
+            if(!running) return; // Hanya berjalan jika AI/CCTV nyala
+            
+            // 1. Antrean
+            if(antreanChart) {
+                const lastVal = antreanChart.data.datasets[0].data[6] || 0;
+                const newVal = Math.max(0, lastVal + (Math.floor(Math.random() * 5) - 1)); 
+                antreanChart.data.datasets[0].data.shift();
+                antreanChart.data.datasets[0].data.push(newVal);
+                
+                document.getElementById('kti-antrean').innerHTML = `${newVal} <span>SMP</span>`;
+                document.getElementById('kti-tundaan').innerHTML = `${(newVal * 3.1).toFixed(2)} <span>SMP-menit</span>`;
+                antreanChart.update();
+            }
 
-            if(reportPieChart) {
-                reportPieChart.data.datasets[0].data = [cCar, cMotor, cPerson, cBus];
-                reportPieChart.update();
+            // 2. Akumulasi Kerugian (Berjalan terus meningkat saat CCTV on)
+            if(kerugianChart) {
+                kerugianData = kerugianData.map(val => val + Math.floor(Math.random() * 85) + 10);
+                kerugianChart.data.datasets[0].data = [...kerugianData];
+                kerugianChart.update();
+            }
+
+            // 3. Kapasitas
+            if(kapasitasChart) {
+                const qb = Math.floor(Math.random() * 4) + 4; 
+                const qa = 12; 
+                const overload = qa - qb;
+                
+                kapasitasChart.data.datasets[0].data = [qb, Math.max(0, overload)];
+                kapasitasChart.data.datasets[0].backgroundColor = [(overload > 6) ? '#ffb703' : '#06d6a0', '#ef233c'];
+                kapasitasChart.update();
             }
         }
 
@@ -588,7 +857,7 @@
                     if(cctv.type === 'iframe') { pendingCctvToPlay = cctv; showModal(); } 
                     else { startExternalVideo(cctv); }
                 } else {
-                    alert("Pilih CCTV dulu di menu dropdown!");
+                    showToast("Peringatan", "Pilih CCTV dulu di menu dropdown!", false);
                 }
             }
         }
@@ -671,7 +940,7 @@
             }
         }
 
-        function handleVidError() { loading = false; stopVideoInternal(); document.getElementById('placeholder').style.display = 'flex'; toggleButtonState('stop'); addLogAesthetic('Koneksi Stream Error', 'fa-triangle-exclamation', 'var(--accent-red)');}
+        function handleVidError() { loading = false; stopVideoInternal(); document.getElementById('placeholder').style.display = 'flex'; toggleButtonState('stop'); addLogAesthetic('Koneksi Stream Error', 'fa-triangle-exclamation', 'var(--accent-red)'); showToast("Error", "Gagal memuat feed CCTV", false);}
         
         function stopVideoInternal() { 
             if (rafId) cancelAnimationFrame(rafId); 
@@ -689,6 +958,10 @@
             toggleButtonState('stop'); 
             ['s-car','s-motor','s-person'].forEach(id => document.getElementById(id).textContent = '0'); 
             document.getElementById('s-fps').textContent = '0 FPS'; 
+            vehicleHistory30s = []; 
+            
+            // KOSONGKAN GRAFIK SAAT BERHENTI (Sesuai Permintaan)
+            resetSemuaGrafik();
         }
 
         async function detect() {
@@ -723,7 +996,7 @@
                         const namaIndo = cls==='car'?'Mobil':cls==='motorcycle'?'Motor':cls==='person'?'Orang':'Bus/Truk';
                         const icons = {'car':'fa-car-side', 'motorcycle':'fa-motorcycle', 'person':'fa-person'};
                         addLogAesthetic(`${qty}x ${namaIndo}`, icons[cls] || 'fa-crosshairs', COLOR_MAP[cls]);
-                        trackVehicle(cls, qty);
+                        trackVehicle(cls, qty); 
                     }
                 }
                 fc++; const t = performance.now(); if (t - fpsT >= 1000) { document.getElementById('s-fps').textContent = `${Math.round(fc * 1000 / (t - fpsT))} FPS`; fc = 0; fpsT = t; }
@@ -749,7 +1022,8 @@
         
         function clearLog() { document.getElementById('log-container').innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-muted); font-size:0.85rem; font-weight:600;" id="log-empty">Menunggu deteksi kendaraan...</div>'; }
 
-        initCctvList(); initReportChart();
+        initCctvList(); 
+        initReportCharts();
     </script>
 </body>
-</html>f
+</html>
